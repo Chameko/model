@@ -1,0 +1,72 @@
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="imagine.css" />
+#+OPTIONS: toc:nil num:nil html-style:nil
+#+title: Model V1
+For the first model I want to make a graph based neural network without the exemplars to both
+- Prove that exemplar based learning assists in the model performance
+- Learn more about using PyTorch
+* General process
+The model will be divided into these stages
+** Data preparation
+Collect the window data from the slide images
+** Feature extraction
+Extract the slide image windows and embed them into the feature space
+** Graph construction
+Construct a graph with the edges between the windows representing their relative distance on the slide
+** Graph message passing
+Using GAT's propagate information through the graph
+** Prediction
+Predict the windows gene expression
+* Dataset
+I will use the same 10xgenomomics dataset as those in (Yang et al. 2024), namely V1_Breast_Cancer_Block_A_Section_1 and V1_Breast_Cancer_Block_A_Section_2
+* Files
+The current tree looks like this
+- pygeo/
+- v1/
+- data/
+
+Where v1 contains this model, data contains the slide images and pygeo contains the virtual environment
+* Workspace creation
+:PROPERTIES:
+:header-args: results: silent
+:END:
+** Create virtual environment
+#+BEGIN_SRC sh :dir ~/uni/models
+  python3 -m venv pygeo
+#+END_SRC
+** Install dependencies
+*** Laptop
+#+BEGIN_SRC bash :dir ~/uni/models :session shell :results output
+  source ./pygeo/bin/activate
+  pip install torch_geometric
+
+  pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.4.0+cpu.html
+  pip install tifffile
+#+END_SRC
+*** Desktop
+* Data preparation
+:PROPERTIES:
+:header-args:python: :tangle ./dataset.py :results silent
+:END:
+Import dependencies
+#+BEGIN_SRC python
+  import os
+  
+#+END_SRC
+
+Specify the dataset source
+#+BEGIN_SRC python
+  Breast_Cancer = [
+      "V1_Breast_Cancer_Block_A_Section_1"
+      "V1_Breast_Cancer_Block_A_Section_2"
+      "Targeted_Visium_Human_BreastCancer_Immunology"
+  ]
+  data_dir = "../data"
+#+END_SRC
+
+Custom dataset
+#+BEGIN_SRC python
+
+  class TxPBreastDataset(Dataset):
+      def __init__(self):
+          # TODO
+#+END_SRC
