@@ -8,18 +8,15 @@ import pandas as pd
 import numpy as np
 
 Breast_Cancer = [
-    "V1_Breast_Cancer_Block_A_Section_1"
-    "V1_Breast_Cancer_Block_A_Section_2"
-    "Targeted_Visium_Human_BreastCancer_Immunology"
+    "V1_Breast_Cancer_Block_A_Section_1",
 ]
-data_dir = "../data"
 
 class TxGBreastDataset(Dataset):
     """Contains data various from 10x Genomics breast cancer spatial transcriptomic data and their corresponding
     slide images
 
     breast_cancers -- Slides to include in req_gene
-    window_size  -- Size  of the window
+    window_size  -- Size of the window
     all_data -- Contains the gene expression data, indexed by slide
     req_gene -- Contains the gene expression of the slides specified by breast_cancers
     all_gene -- Contains the gene expression of all slides
@@ -36,6 +33,7 @@ class TxGBreastDataset(Dataset):
         self.window_size = window_size
         data = []
         for slide in Breast_Cancer:
+            print(f"Loading slide {slide}...")
             # Get the path
             path = os.path.join(data_dir, slide)
             # Get the data
@@ -64,7 +62,7 @@ class TxGBreastDataset(Dataset):
         # Create flat mapping of index -> gene count of slide
         self.mapping = []
         for i in self.breast_cancers:
-            _, counts = self.all_data[i]
+            _, counts, _ = self.all_data[i]
             for j in range(len(counts)):
                 self.mapping.append([i, j])
 
@@ -75,7 +73,7 @@ class TxGBreastDataset(Dataset):
         # Get the name of the dataset from the path
         dataset_name = data_root.split(os.sep)[-1]
         # Get the count file 
-        count_file = os.path.join(data_root, f"{dataset_name}_filtered_feature_bc_matrix.h5")
+        count_file = f"{dataset_name}_filtered_feature_bc_matrix.h5"
         # Load the data from the directory.
         data = read_visium(data_root, count_file=count_file)
         data.var_names_make_unique()
@@ -95,19 +93,20 @@ class TxGBreastDataset(Dataset):
         # We get all the gene names present in the dataset
         for (img, d) in tqdm(data, "gathering gene names"):
             # Get the counts of genes
-            counts = pd.DataFrame(d.X.todence(), columns=d.var_names, index=d.obs_names)
+            counts = pd.DataFrame(d.X.todense(), columns=d.var_names, index=d.obs_names)
             # Get the coords of genes
             coord = pd.DataFrame(d.obsm['spatial'], columns=['x_coord', 'y_coord'], index=d.obs_names)
             # Record gene names
             gene_names = gene_names.union(set(counts.columns.values))
-        all_data = []
+        all_data = {}
         all_gene = []
         req_gene = []
         gene_names = list(gene_names)
         gene_names.sort()
         # We get the gene counts and pad any missing genes with 0s
-        for (idx, (img, d)) in tqdm(enumerate(data), "padding data"):
-            counts = pd.DataFrame(d.X.todence(), columns=d.var_names, index=d.obs_names)
+        print("Processing data...")
+        for (idx, (img, d)) in enumerate(tqdm(data, "padding data")):
+            counts = pd.DataFrame(d.X.todense(), columns=d.var_names, index=d.obs_names)
             coord = pd.DataFrame(d.obsm['spatial'], columns=['x_coord', 'y_coord'], index=d.obs_names)
             # Record the missing genes
             missing = list(set(gene_names) - set(counts.columns.values))
@@ -126,6 +125,7 @@ class TxGBreastDataset(Dataset):
                 all_gene.append(gene)
                 if idx in self.breast_cancers:
                     req_gene.append(gene)
+        del data
 
         all_gene = np.array(all_gene)
         req_gene = np.array(req_gene)
@@ -155,6 +155,9 @@ class TxGBreastDataset(Dataset):
 
         return {
             "img" : img,
-            "count" : count,
+            "count" : counts,
             "pos" : torch.LongTensor(position)
         }
+    
+    def __len__(self):
+        return len(self.mapping)

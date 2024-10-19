@@ -1,2 +1,4 @@
 pygeo/
 data/
+pygeo_rocm/
+v1/__pycache__

@@ -7,8 +7,9 @@ from torchvision import models
 
 class WinGNN(nn.Module):
     def __init__(self, num_layers = 4):
+        super().__init__()
         # Encode the data into feature space. We use a resnet with the classifying layer removed
-        self.encoder = models.resnet18(models.ResNet18_Weights.DEFAULT)
+        self.encoder = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
         self.encoder = nn.Sequential(*list(self.encoder.children())[:-1])
 
         # Graph learning
